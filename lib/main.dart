@@ -14,7 +14,7 @@ class App extends StatefulWidget {
 }
 
 class _AppState extends State<App>{
-  bool _isDarkMode = false;
+  bool _isDarkMode = true;
 
   void _toggleDarkMode(bool value) {
     setState(() {

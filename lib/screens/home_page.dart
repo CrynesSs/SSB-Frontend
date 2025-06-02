@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:qsb/screens/about_page.dart';
 import 'package:qsb/screens/signup_page.dart';
 import 'package:qsb/screens/welcome_page.dart';
+import '../enums/e_pages.dart';
 import 'dashboard_page.dart';
 import 'keygen_page.dart';
 import 'login_page.dart';
@@ -32,9 +33,24 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _switchPage(Widget page) {
+
+
+  void _switchPage(EPages page) {
     setState(() {
-      _currentPage = page;
+
+      _currentPage = switch(page)
+      {
+
+        EPages.login => LoginScreen(login: _login),
+
+        EPages.signup => SignupScreen(switchPage: _switchPage),
+
+        EPages.about => const AboutPage(),
+
+        EPages.dashboard => const DashboardPage(),
+
+        EPages.keygen => const KeygenScreen(),
+      };
     });
   }
 
@@ -42,10 +58,10 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       loggedIn = isLoggedIn;
       if(loggedIn){
-        _switchPage(const DashboardPage());
+        _switchPage(EPages.dashboard);
       }
       else{
-        _switchPage(LoginScreen(login: _login));
+        _switchPage(EPages.login);
       }
     });
   }
@@ -91,7 +107,7 @@ class _HomePageState extends State<HomePage> {
                   title: const Text('Login'),
                   onTap: () {
                     Navigator.pop(context); // close drawer
-                    _switchPage(LoginScreen(login: _login));
+                    _switchPage(EPages.login);
                   },
                 ),
                 ListTile(
@@ -99,7 +115,7 @@ class _HomePageState extends State<HomePage> {
                   title: const Text('Signup'),
                   onTap: () {
                     Navigator.pop(context);
-                    _switchPage(const SignupScreen());
+                    _switchPage(EPages.signup);
                   },
                 ),
                 ListTile(
@@ -107,7 +123,7 @@ class _HomePageState extends State<HomePage> {
                   title: const Text('Keygen'),
                   onTap: () {
                     Navigator.pop(context);
-                    _switchPage(const KeygenScreen());
+                    _switchPage(EPages.keygen);
                   },
                 ),
                 ListTile(
@@ -115,7 +131,7 @@ class _HomePageState extends State<HomePage> {
                   title: const Text('About'),
                   onTap: (){
                     Navigator.pop(context);
-                    _switchPage(const AboutPage());
+                    _switchPage(EPages.about);
                   },
                 )
               ] else ...[
