@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:qsb/globals.dart';
 
 import '../ui_elements/info_hover_card.dart';
+import '../util.dart';
 
 class LoginScreen extends StatefulWidget {
   final Function() login;
@@ -35,11 +36,6 @@ class _LoginScreenState extends State<LoginScreen> {
   Uint8List? _publicKeyBytes;
   String? _publicKeyFileName;
 
-  Future<String> _hashAndEncode(String input) async {
-    final bytes = utf8.encode(input);
-    final digest = await sha256Digest(bytes);
-    return base64Encode(digest);
-  }
 
   Future<Uint8List> sha256Digest(List<int> input) async {
     final digest = sha256.convert(input);
@@ -80,42 +76,55 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    final encodedUsername = await _hashAndEncode(username);
-    final encodedPassword = await _hashAndEncode(password);
-    final encodedPassphrase = await _hashAndEncode(passphrase);
     final publicKey = utf8.decode(_publicKeyBytes!);
 
-    try {
-      final response = await http.post(
-        Uri.parse("$serverAddress/login/"),
-        // change if needed
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "username": encodedUsername,
-          "password": encodedPassword,
-          "passphrase": encodedPassphrase,
-          "public_key": publicKey,
-        }),
-      );
-      if (!mounted) return;
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Successfully Logged in")),
+    final salts = await http.post(Uri.parse("$serverAddress/login/salts"), headers: {"Content-Type": "application/json"}, body: jsonEncode({
+      "public_key": publicKey,
+    }),);
+    if(salts.statusCode == 200){
+      try {
+        final Map<String,dynamic> data = jsonDecode(salts.body);
+        final usernameSalt = data["username_salt"];
+        final passwordSalt = data["password_salt"];
+        final passphraseSalt = data["passphrase_salt"];
+
+        final encodedUsername = hashWithSalt(username, usernameSalt);
+        final encodedPassword = hashWithSalt(password, passwordSalt);
+        final encodedPassphrase = hashWithSalt(passphrase, passphraseSalt);
+
+        final response = await http.post(
+          Uri.parse("$serverAddress/login/"),
+          // change if needed
+          headers: {"Content-Type": "application/json"},
+          body: jsonEncode({
+            "username": encodedUsername,
+            "password": encodedPassword,
+            "passphrase": encodedPassphrase,
+            "public_key": publicKey,
+          }),
         );
-        sessionCookie = response.headers['set-cookie']!.split(';').first;
-        isLoggedIn = true;
-        widget.login();
-      } else {
-        final responseBody = jsonDecode(response.body);
+        if (!mounted) return;
+        if (response.statusCode == 200) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Successfully Logged in")),
+          );
+          sessionCookie = response.headers['set-cookie']!.split(';').first;
+          isLoggedIn = true;
+          widget.login();
+        } else {
+          final responseBody = jsonDecode(response.body);
+          setState(() {
+            _error = responseBody['message'] ?? "Login Failed.";
+            _isLoading = false;
+          });
+        }
+      } catch (e) {
         setState(() {
-          _error = responseBody['message'] ?? "Signup failed.";
+          _error = "Network error: $e";
         });
       }
-    } catch (e) {
-      setState(() {
-        _error = "Network error: $e";
-      });
     }
+
   }
 
   Timer? _hideTimerPassword;

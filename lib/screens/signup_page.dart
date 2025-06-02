@@ -2,12 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:qsb/enums/e_pages.dart';
 import 'package:qsb/ui_elements/info_hover_card.dart';
+
+import '../util.dart';
 
 class SignupScreen extends StatefulWidget {
   final Function(EPages page) switchPage;
@@ -33,17 +34,6 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _isLoading = false;
   String? _error;
 
-  Future<String> _hashAndEncode(String input) async {
-    final bytes = utf8.encode(input);
-    final digest = await sha256Digest(bytes);
-    return base64Encode(digest);
-  }
-
-  Future<Uint8List> sha256Digest(List<int> input) async {
-    final digest = sha256.convert(input);
-    return Uint8List.fromList(digest.bytes);
-  }
-
   Future<void> _pickPublicKeyFile() async {
     final result = await FilePicker.platform.pickFiles(
         type: FileType.custom, allowedExtensions: ['txt', 'pem', 'key'],withData: true);
@@ -54,6 +44,8 @@ class _SignupScreenState extends State<SignupScreen> {
       });
     }
   }
+// Helper function to generate salt (random bytes)
+
 
   Future<void> _signup() async {
     setState(() {
@@ -76,9 +68,15 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
 
-    final encodedUsername = await _hashAndEncode(username);
-    final encodedPassword = await _hashAndEncode(password);
-    final encodedPassphrase = await _hashAndEncode(passphrase);
+    final usernameSalt = generateSalt();
+    final passwordSalt = generateSalt();
+    final passphraseSalt = generateSalt();
+
+    final encodedUsername = hashWithSalt(username, usernameSalt);
+    final encodedPassword = hashWithSalt(password, passwordSalt);
+    final encodedPassphrase = hashWithSalt(passphrase, passphraseSalt);
+
+
     final publicKey = utf8.decode(_publicKeyBytes!);
 
     try {
@@ -91,6 +89,9 @@ class _SignupScreenState extends State<SignupScreen> {
           "password": encodedPassword,
           "passphrase": encodedPassphrase,
           "public_key": publicKey,
+          "username_salt" : usernameSalt,
+          "password_salt" : passwordSalt,
+          "passphrase_salt" : passphraseSalt
         }),
       );
       if (!mounted) return;
