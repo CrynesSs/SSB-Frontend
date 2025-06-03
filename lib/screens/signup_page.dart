@@ -104,11 +104,13 @@ class _SignupScreenState extends State<SignupScreen> {
         final responseBody = jsonDecode(response.body);
         setState(() {
           _error = responseBody['message'] ?? "Signup failed.";
+          _isLoading = false;
         });
       }
     } catch (e) {
       setState(() {
         _error = "Network error: $e";
+        _isLoading = false;
       });
     }
 

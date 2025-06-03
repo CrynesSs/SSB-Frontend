@@ -50,6 +50,8 @@ class _HomePageState extends State<HomePage> {
         EPages.dashboard => const DashboardPage(),
 
         EPages.keygen => const KeygenScreen(),
+
+        EPages.home => const WelcomeScreen(),
       };
     });
   }
@@ -102,6 +104,14 @@ class _HomePageState extends State<HomePage> {
                     style: TextStyle(color: Colors.white, fontSize: 24)),
               ),
               if (!loggedIn) ...[
+                ListTile(
+                  leading: const Icon(Icons.home),
+                  title: const Text('Home'),
+                  onTap: (){
+                    Navigator.pop(context); // close drawer
+                    _switchPage(EPages.home);
+                  },
+                ),
                 ListTile(
                   leading: const Icon(Icons.login),
                   title: const Text('Login'),

@@ -121,6 +121,7 @@ class _LoginScreenState extends State<LoginScreen> {
       } catch (e) {
         setState(() {
           _error = "Network error: $e";
+          _isLoading = false;
         });
       }
     }

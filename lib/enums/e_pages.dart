@@ -1,5 +1,6 @@
 
 enum EPages{
+  home,
   login,
   signup,
   about,
